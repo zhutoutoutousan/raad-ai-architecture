@@ -1,0 +1,70 @@
+# Simple Dockerfile for Architectural Style Classification
+FROM python:3.10-slim
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
+ENV CUDA_VISIBLE_DEVICES=0
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    wget \
+    curl \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+
+# Install Python dependencies with flexible versions
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir \
+    torch \
+    torchvision \
+    torchaudio \
+    --index-url https://download.pytorch.org/whl/cu118 && \
+    pip install --no-cache-dir \
+    timm \
+    transformers \
+    pytorch-lightning \
+    tensorboard \
+    wandb \
+    numpy \
+    pandas \
+    scikit-learn \
+    matplotlib \
+    seaborn \
+    pillow \
+    opencv-python \
+    kagglehub \
+    optuna \
+    "ray[tune]" \
+    hydra-core \
+    omegaconf
+
+# Copy source code
+COPY src/ ./src/
+COPY scripts/ ./scripts/
+COPY configs/ ./configs/
+
+# Copy experiment scripts
+COPY run_experiment.py .
+COPY scale_up_experiments.py .
+COPY hyperparameter_optimization.py .
+COPY setup_real_data.py .
+
+# Create necessary directories
+RUN mkdir -p /app/data /app/models /app/logs /app/results /app/paper
+
+# Set permissions
+RUN chmod +x scripts/*.sh
+
+# Expose ports for TensorBoard and other services
+EXPOSE 6006 8080
+
+# Default command
+CMD ["tail", "-f", "/dev/null"]

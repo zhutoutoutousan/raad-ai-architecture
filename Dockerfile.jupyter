@@ -1,0 +1,90 @@
+FROM python:3.10-slim
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    wget \
+    curl \
+    vim \
+    htop \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    libgcc-s1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create workspace directory
+WORKDIR /workspace
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Install Jupyter Lab and additional development tools
+RUN pip3 install --no-cache-dir \
+    jupyterlab \
+    ipywidgets \
+    jupyter_contrib_nbextensions \
+    jupyter_nbextensions_configurator \
+    nbdime \
+    jupyterlab-git \
+    jupyterlab-lsp \
+    python-lsp-server[all] \
+    black \
+    flake8 \
+    isort \
+    mypy \
+    pre-commit
+
+# Install additional ML/AI libraries
+RUN pip3 install --no-cache-dir \
+    wandb \
+    mlflow \
+    optuna \
+    ray[tune] \
+    hydra-core \
+    omegaconf \
+    pytorch-lightning \
+    lightning-bolts \
+    tensorboard \
+    tensorboardX \
+    plotly \
+    seaborn \
+    matplotlib \
+    pillow \
+    opencv-python \
+    albumentations \
+    timm \
+    transformers \
+    datasets \
+    accelerate \
+    diffusers \
+    kaggle \
+    kagglehub
+
+# Create necessary directories
+RUN mkdir -p /workspace/{data,models,notebooks,src,logs,configs}
+
+# Copy source code
+COPY src/ /workspace/src/
+COPY configs/ /workspace/configs/
+
+# Set up Jupyter configuration
+RUN jupyter lab --generate-config
+RUN echo "c.ServerApp.token = 'archstyle2025'" >> /root/.jupyter/jupyter_lab_config.py
+RUN echo "c.ServerApp.ip = '0.0.0.0'" >> /root/.jupyter/jupyter_lab_config.py
+RUN echo "c.ServerApp.allow_root = True" >> /root/.jupyter/jupyter_lab_config.py
+RUN echo "c.ServerApp.open_browser = False" >> /root/.jupyter/jupyter_lab_config.py
+
+# Expose ports
+EXPOSE 8888 6006
+
+# Start Jupyter Lab
+CMD ["jupyter", "lab", "--allow-root", "--ip=0.0.0.0", "--port=8888"]

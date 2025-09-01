@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  architectural-research:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    container_name: architectural-research-production
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CUDA_VISIBLE_DEVICES=0
+      - WANDB_API_KEY=${WANDB_API_KEY:-}
+      - KAGGLE_USERNAME=${KAGGLE_USERNAME:-}
+      - KAGGLE_KEY=${KAGGLE_KEY:-}
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./logs:/app/logs
+      - ./results:/app/results
+      - ./paper:/app/paper
+      - ./configs:/app/configs
+    ports:
+      - "6006:6006"  # TensorBoard
+      - "8080:8080"  # Ray Dashboard
+      - "8265:8265"  # Ray Dashboard (alternative)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    command: tail -f /dev/null
+
+  # Optional: TensorBoard service
+  tensorboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    container_name: architectural-tensorboard
+    restart: unless-stopped
+    ports:
+      - "6006:6006"
+    volumes:
+      - ./logs:/app/logs
+    command: tensorboard --logdir=/app/logs --host=0.0.0.0 --port=6006
+
+  # Optional: Ray Dashboard
+  ray-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    container_name: architectural-ray-dashboard
+    restart: unless-stopped
+    ports:
+      - "8265:8265"
+    volumes:
+      - ./ray_results:/app/ray_results
+    command: ray start --head --dashboard-host=0.0.0.0 --dashboard-port=8265
+
+networks:
+  default:
+    name: architectural-research-network

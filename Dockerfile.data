@@ -1,0 +1,68 @@
+FROM python:3.10-slim
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    wget \
+    curl \
+    unzip \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    libgcc-s1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create workspace directory
+WORKDIR /workspace
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Install data processing specific libraries
+RUN pip3 install --no-cache-dir \
+    pandas \
+    numpy \
+    scipy \
+    scikit-learn \
+    scikit-image \
+    opencv-python \
+    pillow \
+    albumentations \
+    imgaug \
+    kaggle \
+    kagglehub \
+    requests \
+    tqdm \
+    click \
+    rich \
+    typer \
+    pydantic \
+    pydantic-settings \
+    python-dotenv \
+    wandb \
+    mlflow
+
+# Create necessary directories
+RUN mkdir -p /workspace/{data,src,configs,logs}
+
+# Copy source code
+COPY src/ /workspace/src/
+COPY configs/ /workspace/configs/
+COPY scripts/ /workspace/scripts/
+
+# Make scripts executable
+RUN chmod +x /workspace/scripts/*.sh
+
+# Set up data processing environment
+ENV PYTHONPATH=/workspace/src:$PYTHONPATH
+
+# Default command
+CMD ["python3", "/workspace/src/data_processing.py"]

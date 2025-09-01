@@ -1,0 +1,65 @@
+FROM python:3.10-slim
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    wget \
+    curl \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create workspace directory
+WORKDIR /workspace
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Install monitoring specific libraries
+RUN pip3 install --no-cache-dir \
+    tensorboard \
+    tensorboardX \
+    mlflow \
+    wandb \
+    prometheus-client \
+    grafana-api \
+    influxdb-client \
+    plotly \
+    dash \
+    streamlit \
+    panel \
+    bokeh \
+    holoviews \
+    hvplot
+
+# Install Grafana
+RUN wget -q -O - https://packages.grafana.com/gpg.key | apt-key add - \
+    && echo "deb https://packages.grafana.com/oss/deb stable main" | tee -a /etc/apt/sources.list.d/grafana.list \
+    && apt-get update \
+    && apt-get install -y grafana \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create necessary directories
+RUN mkdir -p /workspace/{logs,models,configs,src,dashboards}
+
+# Copy source code and configurations
+COPY src/ /workspace/src/
+COPY configs/ /workspace/configs/
+COPY dashboards/ /workspace/dashboards/
+
+# Set up monitoring environment
+ENV PYTHONPATH=/workspace/src:$PYTHONPATH
+
+# Expose ports
+EXPOSE 6006 5000 3000
+
+# Start monitoring services
+CMD ["sh", "-c", "tensorboard --logdir=/workspace/logs --host=0.0.0.0 --port=6006 & mlflow server --host=0.0.0.0 --port=5000 & grafana-server --config=/etc/grafana/grafana.ini"]

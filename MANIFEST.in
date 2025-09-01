@@ -1,0 +1,46 @@
+include README.md
+include LICENSE
+include requirements.txt
+include setup.py
+include MANIFEST.in
+
+# Include model files
+include checkpoints/best_model/*.ckpt
+include results/comprehensive_analytics/*.png
+include results/comprehensive_analytics/*.csv
+include results/comprehensive_analytics/*.json
+
+# Include paper files
+include paper/*.tex
+include paper/*.png
+include paper/*.csv
+include paper/*.json
+include paper/Makefile
+include paper/README.md
+
+# Include source code
+recursive-include src *.py
+recursive-include src *.json
+recursive-include src *.yaml
+recursive-include src *.yml
+
+# Include configuration files
+include configs/*.yaml
+include configs/*.yml
+include configs/*.json
+
+# Include documentation
+include *.md
+include docs/*.md
+include docs/*.rst
+
+# Exclude unnecessary files
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude *.pyd
+global-exclude __pycache__
+global-exclude .git*
+global-exclude .DS_Store
+global-exclude *.log
+global-exclude *.tmp
+global-exclude *.bak
