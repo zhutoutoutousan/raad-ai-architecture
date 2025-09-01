@@ -1,0 +1,76 @@
+FROM python:3.10-slim
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV OMP_NUM_THREADS=1
+ENV MKL_NUM_THREADS=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    wget \
+    curl \
+    htop \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    libgcc-s1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create workspace directory
+WORKDIR /workspace
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Install training-specific libraries
+RUN pip3 install --no-cache-dir \
+    wandb \
+    mlflow \
+    optuna \
+    ray[tune] \
+    hydra-core \
+    omegaconf \
+    pytorch-lightning \
+    lightning-bolts \
+    tensorboard \
+    tensorboardX \
+    plotly \
+    seaborn \
+    matplotlib \
+    pillow \
+    opencv-python \
+    albumentations \
+    timm \
+    transformers \
+    datasets \
+    accelerate \
+    diffusers \
+    kaggle \
+    kagglehub \
+    torch-tb-profiler \
+    deepspeed \
+    apex \
+    fairscale
+
+# Create necessary directories
+RUN mkdir -p /workspace/{data,models,logs,configs,src}
+
+# Copy source code
+COPY src/ /workspace/src/
+COPY configs/ /workspace/configs/
+COPY scripts/ /workspace/scripts/
+
+# Make scripts executable
+RUN chmod +x /workspace/scripts/*.sh
+
+# Set up training environment
+ENV PYTHONPATH=/workspace/src:$PYTHONPATH
+
+# Default command (can be overridden)
+CMD ["python3", "/workspace/src/train.py"]

@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  architectural-experiments:
+    build: .
+    container_name: architectural-style-classification
+    volumes:
+      - ./data:/app/data
+      - ./outputs:/app/outputs
+      - ./logs:/app/logs
+      - ./models:/app/models
+    ports:
+      - "6006:6006"  # TensorBoard
+      - "8888:8888"  # Jupyter (if needed)
+    environment:
+      - PYTHONPATH=/app
+      - CUDA_VISIBLE_DEVICES=0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    command: tail -f /dev/null
+    tty: true
+    stdin_open: true
+
+  # Optional: Jupyter service for interactive development
+  jupyter:
+    build: .
+    container_name: architectural-jupyter
+    volumes:
+      - ./data:/app/data
+      - ./outputs:/app/outputs
+      - ./logs:/app/logs
+      - ./models:/app/models
+      - ./notebooks:/app/notebooks
+    ports:
+      - "8888:8888"
+    environment:
+      - PYTHONPATH=/app
+      - CUDA_VISIBLE_DEVICES=0
+    command: jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token=''
+    profiles:
+      - jupyter

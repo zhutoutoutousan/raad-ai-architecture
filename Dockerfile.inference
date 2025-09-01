@@ -1,0 +1,63 @@
+FROM python:3.10-slim
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    wget \
+    curl \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    libgcc-s1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create workspace directory
+WORKDIR /workspace
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Install inference-specific libraries
+RUN pip3 install --no-cache-dir \
+    fastapi \
+    uvicorn[standard] \
+    gradio \
+    streamlit \
+    python-multipart \
+    aiofiles \
+    redis \
+    celery \
+    prometheus-client \
+    structlog \
+    pydantic \
+    pydantic-settings \
+    python-jose[cryptography] \
+    passlib[bcrypt] \
+    python-multipart \
+    httpx \
+    asyncio-mqtt \
+    websockets
+
+# Create necessary directories
+RUN mkdir -p /workspace/{models,data,logs,src,api}
+
+# Copy source code
+COPY src/ /workspace/src/
+COPY api/ /workspace/api/
+
+# Set up inference environment
+ENV PYTHONPATH=/workspace/src:/workspace/api:$PYTHONPATH
+
+# Expose ports
+EXPOSE 8000 8001
+
+# Start inference services
+CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port 8000 & gradio api/gradio_app.py --server.port 8001 --server.address 0.0.0.0"]
