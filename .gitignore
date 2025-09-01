@@ -1,0 +1,12 @@
+*.ckpt
+checkpoints/
+results/
+logs/
+data/
+models/
+src/
+configs/
+notebooks/
+scripts/
+api/
+dashboards/
